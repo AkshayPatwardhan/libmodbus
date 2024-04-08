@@ -102,6 +102,10 @@ struct _modbus {
     struct timeval indication_timeout;
     const modbus_backend_t *backend;
     void *backend_data;
+    /* Add support for Software Controller DE/RE Pins*/
+    bool enable_software_de_re;
+    uint de_pin;
+    uint re_pin;
 };
 
 void _modbus_init_common(modbus_t *ctx);

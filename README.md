@@ -88,3 +88,17 @@ To report a bug or to contribute
 --------------------------------
 
 See [CONTRIBUTING](CONTRIBUTING.md) document.
+
+Additional APIs
+---------------
+- `modbus_enable_software_de_re`    : Sets an enable Rpi integer in ctx data structure.
+- `modbus_configure_common_de_re`   : Configures GPIO BCM pin to be used for rx-tx switching (if the RE and DE are the same)
+- `modbus_configure_de_re_pins`     : Configures GPIO BCM pins (RE & DE) to be used for rx-tx switching (if the RE and DE are not on the same pin)
+- `modbus_pin_export_direction`     : export configured GPIO, configures it as an output.
+- `modbus_pin_unexport_direction`   : unexport configured GPIO, configures it as an input.
+
+Usage
+-----
+
+See test.c
+

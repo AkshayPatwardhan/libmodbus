@@ -18,6 +18,10 @@
 #include <unistd.h>
 #endif
 
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include <config.h>
 
 #include "modbus.h"
@@ -1907,3 +1911,172 @@ size_t strlcpy(char *dest, const char *src, size_t dest_size)
     return (s - src - 1); /* count does not include NUL */
 }
 #endif
+
+/* RS485 Software control API */
+
+int modbus_enable_software_de_re(modbus_t *ctx, uint8_t value)
+{
+  if(value == 1)
+  {
+    ctx->enable_software_de_re = value;
+    if(ctx->debug)
+    {
+      fprintf(stderr, "RS485 software DE/RE control enabled.\n");
+    }
+  }
+  else
+  {
+    ctx->enable_software_de_re = 0;
+  }
+  return ctx->enable_software_de_re;
+}
+
+int modbus_configure_common_de_re(modbus_t *ctx, uint8_t value)
+{
+  return modbus_configure_de_re_pins(ctx, value, value);
+}
+
+int modbus_configure_de_re_pins(modbus_t *ctx, uint8_t de, uint8_t re)
+{
+  ctx->re_pin = re;
+  ctx->de_pin = de;
+  if(ctx->debug)
+  {
+    fprintf(stderr, "DE Pin set as %d and RE Pin set as %d.\n",ctx->de_pin,ctx->re_pin);  }
+  return 0;
+}
+
+static int _modbus_rs485_pin_export_direction(int debug, uint pin)
+{
+  char buffer[GPIO_NUMBER_ARRAY_SIZE];
+  ssize_t bytes_written;
+  int fd;
+  fd = open("/sys/class/gpio/export", O_WRONLY);
+  if (fd == -1)
+  {
+      if(debug)
+      {
+        fprintf(stderr, "Failed to open export for writing!\n");
+      }
+      return(-1);
+  }
+  bytes_written = snprintf(buffer, GPIO_NUMBER_ARRAY_SIZE, "%d", pin);
+  write(fd, buffer, bytes_written);
+  close(fd);
+
+  static const char s_directions_str[]  = "out";
+  char path[PATH_ARRAY_SIZE];
+  snprintf(path, PATH_ARRAY_SIZE, "/sys/class/gpio/gpio%d/direction", pin);
+  fd = open(path, O_WRONLY);
+  if (fd == -1)
+  {
+      if(debug)
+      {
+        fprintf(stderr, "Failed to open gpio direction for writing!\n");
+      }
+      return(-1);
+  }
+  if (write(fd, &s_directions_str, 3) == -1)
+  {
+      if(debug)
+      {
+        fprintf(stderr, "Failed to set direction!\n");
+      }
+      return(-1);
+  }
+  close(fd);
+  if(debug)
+  {
+      fprintf(stderr, "Pin exported and Pin direction configured successfully.\n");
+  }
+
+  return 0;
+}
+
+static int _modbus_rs485_pin_unexport_direction(int debug, uint pin)
+{
+  static const char s_directions_str[]  = "in";
+  char path[PATH_ARRAY_SIZE];
+  int fd;
+  snprintf(path, PATH_ARRAY_SIZE, "/sys/class/gpio/gpio%d/direction", pin);
+  fd = open(path, O_WRONLY);
+  if (fd == -1)
+  {
+    if(debug)
+    {
+     fprintf(stderr, "Failed to open gpio direction for writing!\n");
+    }
+    return(-1);
+  }
+  if (write(fd, &s_directions_str, 2) == -1)
+  {
+      if(debug)
+      {
+        fprintf(stderr, "Failed to set direction!\n");
+      }
+      return(-1);
+  }
+  close(fd);
+  char buffer[GPIO_NUMBER_ARRAY_SIZE];
+  ssize_t bytes_written;
+  fd = open("/sys/class/gpio/unexport", O_WRONLY);
+  if (fd == -1)
+  {
+      if(debug)
+      {
+        fprintf(stderr, "Failed to open export for writing!\n");
+      }
+      return(-1);
+  }
+  bytes_written = snprintf(buffer, GPIO_NUMBER_ARRAY_SIZE, "%d",pin);
+  write(fd, buffer, bytes_written);
+  close(fd);
+  if(debug)
+  {
+    fprintf(stderr, "Pin Unexported successfully.\n");
+  }
+
+  return 0;
+}
+
+int modbus_rs485_pin_export_direction(modbus_t *ctx)
+{
+    if (ctx == NULL) {
+        errno = EINVAL;
+        return -1;
+    }
+
+  if(ctx->enable_software_de_re == 1)
+  {
+    if(_modbus_rs485_pin_export_direction(ctx->debug,ctx->re_pin) == 0)
+    {
+      return _modbus_rs485_pin_export_direction(ctx->debug,ctx->de_pin);
+    }
+    else
+    {
+      return(-1);
+    }
+  }
+  return 0;
+}
+
+int modbus_rs485_pin_unexport_direction(modbus_t *ctx)
+{
+    if (ctx == NULL) {
+        errno = EINVAL;
+        return -1;
+    }
+
+  if(ctx->enable_software_de_re == 1)
+  {
+    if(_modbus_rs485_pin_unexport_direction(ctx->debug,ctx->re_pin) == 0)
+    {
+      return _modbus_rs485_pin_unexport_direction(ctx->debug,ctx->de_pin);
+    }
+    else
+    {
+      return -1;
+    }
+  }
+  return 0;
+}

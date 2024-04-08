@@ -29,6 +29,9 @@ MODBUS_API int modbus_rtu_get_serial_mode(modbus_t *ctx);
 #define MODBUS_RTU_RTS_UP     1
 #define MODBUS_RTU_RTS_DOWN   2
 
+#define MODBUS_PIN_HIGH         1
+#define MODBUS_PIN_LOW          0
+
 MODBUS_API int modbus_rtu_set_rts(modbus_t *ctx, int mode);
 MODBUS_API int modbus_rtu_get_rts(modbus_t *ctx);
 

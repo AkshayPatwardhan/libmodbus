@@ -113,6 +113,9 @@ MODBUS_BEGIN_DECLS
 /* Random number to avoid errno conflicts */
 #define MODBUS_ENOBASE 112345678
 
+#define PATH_ARRAY_SIZE         40
+#define GPIO_NUMBER_ARRAY_SIZE  4
+
 /* Protocol exceptions */
 enum {
     MODBUS_EXCEPTION_ILLEGAL_FUNCTION = 0x01,
@@ -237,6 +240,12 @@ MODBUS_API int modbus_reply(modbus_t *ctx, const uint8_t *req,
                             int req_length, modbus_mapping_t *mb_mapping);
 MODBUS_API int modbus_reply_exception(modbus_t *ctx, const uint8_t *req,
                                       unsigned int exception_code);
+
+MODBUS_API int modbus_enable_software_de_re(modbus_t *ctx, uint8_t value);
+MODBUS_API int modbus_configure_common_de_re(modbus_t *ctx, uint8_t value);
+MODBUS_API int modbus_configure_de_re_pins(modbus_t *ctx, uint8_t de, uint8_t re);
+MODBUS_API int modbus_rs485_pin_export_direction(modbus_t *ctx);
+MODBUS_API int modbus_rs485_pin_unexport_direction(modbus_t *ctx);
 
 /**
  * UTILS FUNCTIONS
